@@ -20,4 +20,5 @@ rebel.xml
 
 #nodejs
 /node_modules/
+/tmp/
 package-lock.json
