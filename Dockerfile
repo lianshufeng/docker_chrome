@@ -1,8 +1,5 @@
 #
 # 安装： docker build -t lianshufeng/chrome   ./ 
-# Debug: docker run -d -p 9222:9222 lianshufeng/chrome
-# 截图 : 
-#
 #
 
 FROM centos:8
@@ -37,11 +34,9 @@ RUN yum install -y libappindicator-gtk3 liberation-fonts
 
 
 
-
 #设置环境变量
 ENV CHROME_HOME "/opt/google/chrome"
 ENV PATH $CHROME_HOME:$PATH
-
 
 
 
@@ -49,4 +44,16 @@ ENV PATH $CHROME_HOME:$PATH
 EXPOSE 9222 
 
 
+#安装nodejs
+Add install_node.sh /tmp/install_node.sh
+RUN sh /tmp/install_node.sh
+Run rm -rf /tmp/install_node.sh
+
+
+
+#安装web服务
+Add src/screenshot /opt/screenshot
+WORKDIR /opt/screenshot
+Run npm install
+EXPOSE 80
 
