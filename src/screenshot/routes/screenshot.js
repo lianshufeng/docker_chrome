@@ -1,7 +1,8 @@
 var express = require('express');
+var chromeHelper = require('../chrome/ChromeHelper');
 var fs = require('fs');
 var path = require('path');
-var spawn = require('child_process').execSync;
+// var spawn = require('child_process').execSync;
 var router = express.Router();
 
 
@@ -35,43 +36,54 @@ router.post('/', function (req, res, next) {
 
     //创建命令行
     let tmpFile = path.join(process.cwd(), 'tmp', 'screenshot-' + new Date().getTime() + '.png');
-    let cmd = createCmd({
-        'url': url,
-        'w': w,
-        'h': h,
-        'path': tmpFile
-    })
-
-    //执行命令
-    let ret = spawn(cmd);
-
-    if (!fs.existsSync(tmpFile)) {
-        return;
-    }
-
-    //返回给调用者
-    res.writeHead(200, {'Content-Type': 'image/png'});
-    let stream = fs.createReadStream(tmpFile);
-    let responseData = [];//存储文件流
-    if (stream) {//判断状态
-        stream.on('data', function (chunk) {
-            responseData.push(chunk);
-        });
-        stream.on('end', function () {
-            let finalData = Buffer.concat(responseData);
-            res.write(finalData);
-            res.end();
-        });
-    }
 
 
-    //删除临时文件
-    setTimeout(function () {
-        console.log('remove : ' + tmpFile);
-        if (fs.existsSync(tmpFile)) {
-            fs.unlinkSync(tmpFile);
-        }
-    }, 60000);
+    //截图
+    chromeHelper
+        .screenshot({
+            'url': url,
+            'w': w,
+            'h': h,
+            'path': tmpFile
+        })
+        .then(() => {
+
+            //文件不存在
+            if (!fs.existsSync(tmpFile)) {
+                res.writeHead(404);
+                res.end();
+                return;
+            }
+
+            //返回给调用者
+            res.writeHead(200, {'Content-Type': 'image/png'});
+            let stream = fs.createReadStream(tmpFile);
+            let responseData = [];//存储文件流
+            if (stream) {//判断状态
+                stream.on('data', function (chunk) {
+                    responseData.push(chunk);
+                });
+                stream.on('end', function () {
+                    let finalData = Buffer.concat(responseData);
+                    res.write(finalData);
+                    res.end();
+                });
+            }
+
+
+            //删除临时文件
+            setTimeout(function () {
+                console.log('remove : ' + tmpFile);
+                if (fs.existsSync(tmpFile)) {
+                    fs.unlinkSync(tmpFile);
+                }
+            }, 60000);
+
+
+
+
+        })
+
 
 
 });
