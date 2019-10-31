@@ -10,5 +10,5 @@ docker run -v /opt/chrome:/opt/chrome lianshufeng/chrome chrome --disable-dev-sh
 
 - web
 ````shell
-docker run -d -p 80:80 --name chrome lianshufeng/chrome  npm start
+docker run --restart=always -d -p 80:80 --name chrome lianshufeng/chrome  npm start
 ````
