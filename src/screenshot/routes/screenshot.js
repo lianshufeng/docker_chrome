@@ -1,8 +1,8 @@
 var express = require('express');
 var chromeHelper = require('../chrome/ChromeHelper');
+var chromeConfigHelper = require('../chrome/ChromeConfigHelper')
 var fs = require('fs');
 var path = require('path');
-// var spawn = require('child_process').execSync;
 var router = express.Router();
 
 
@@ -17,15 +17,15 @@ router.get('/', function (req, res, next) {
  */
 router.post('/', function (req, res, next) {
 
-    let url = req.body.url;
-    let w = req.body.w;
-    let h = req.body.h;
 
     //必要参数
-    if (url == null || w == null || h == null) {
+    if (req.body.url == null || req.body.w == null || req.body.h == null) {
         tips(res);
         return;
     }
+
+
+    let config = chromeConfigHelper.createConfig(req.body);
 
 
     //创建临时目录
@@ -35,21 +35,15 @@ router.post('/', function (req, res, next) {
 
 
     //创建命令行
-    let tmpFile = path.join(process.cwd(), 'tmp', 'screenshot-' + new Date().getTime() + '.png');
-
+    config.path = path.join(process.cwd(), 'tmp', 'screenshot-' + new Date().getTime() + '.png');
 
     //截图
     chromeHelper
-        .screenshot({
-            'url': url,
-            'w': w,
-            'h': h,
-            'path': tmpFile
-        })
+        .screenshot(config)
         .then(() => {
 
             //文件不存在
-            if (!fs.existsSync(tmpFile)) {
+            if (!fs.existsSync(config.path)) {
                 res.writeHead(404);
                 res.end();
                 return;
@@ -57,7 +51,7 @@ router.post('/', function (req, res, next) {
 
             //返回给调用者
             res.writeHead(200, {'Content-Type': 'image/png'});
-            let stream = fs.createReadStream(tmpFile);
+            let stream = fs.createReadStream(config.path);
             let responseData = [];//存储文件流
             if (stream) {//判断状态
                 stream.on('data', function (chunk) {
@@ -73,34 +67,17 @@ router.post('/', function (req, res, next) {
 
             //删除临时文件
             setTimeout(function () {
-                console.log('remove : ' + tmpFile);
-                if (fs.existsSync(tmpFile)) {
-                    fs.unlinkSync(tmpFile);
+                console.log('remove : ' + config.path);
+                if (fs.existsSync(config.path)) {
+                    fs.unlinkSync(config.path);
                 }
             }, 60000);
-
-
 
 
         })
 
 
-
 });
-
-
-/**
- * 创建cmd
- * @param map
- * @returns {string}
- */
-let createCmd = function (map) {
-    let cmd = require('../ChromeConfig').cmd;
-    for (let key in map) {
-        cmd = cmd.split('${' + key + '}').join(map[key]);
-    }
-    return cmd;
-}
 
 
 /**
@@ -108,7 +85,7 @@ let createCmd = function (map) {
  * @param res
  */
 let tips = function (res) {
-    res.send('请用 post  , url : 网页地址 , w : 宽度  ， h : 高度');
+    res.send('请用 post 表单请求下列参数  :\n' + JSON.stringify(chromeConfigHelper.createConfig({})));
 }
 
 

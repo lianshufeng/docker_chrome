@@ -1,7 +1,3 @@
-var Config = require('../ChromeConfig')
-var spawn = require('child_process').exec;
-
-const CDP = require('chrome-remote-interface');
 const chromeLauncher = require('chrome-launcher');
 const {Chromeless} = require('chromeless')
 
@@ -18,9 +14,19 @@ module.exports = new function () {
             createChromeProcess(port) //创建调试浏览器进程
                 .then((chrome) => {
                     return renderChrome(chrome, config)
-                }).then(resolve)
+                })
+                .then(killChromeProcess)
+                .then(resolve)
         })
     };
+
+    /**
+     * 关闭浏览器
+     */
+    killChromeProcess = function (chrome) {
+        console.log('kill ： ' + chrome.port);
+        chrome.kill();
+    }
 
 
     /**
@@ -38,10 +44,12 @@ module.exports = new function () {
                 width: parseInt(config.w),
                 height: parseInt(config.h)
             },
-            waitTimeout: 2 * 60 * 1000
+            waitTimeout: config.timeout
         })
 
+
         return chromeless.goto(config.url)
+            .wait(config.waitTime <= 0 ? 1 : config.waitTime)
             .evaluate(function () {
                 return {'w': document.body.scrollWidth, 'h': document.body.scrollHeight};
             })
@@ -64,8 +72,15 @@ module.exports = new function () {
                 return this;
             })
             .then(() => {
-                chrome.kill();
-                return this;
+                return new Promise((resolve, reject) => {
+                    resolve(chrome)
+                });
+            })
+            .catch((e) => {
+                console.error(e);
+                return new Promise((resolve, reject) => {
+                    resolve(chrome)
+                });
             })
     }
 
@@ -78,7 +93,7 @@ module.exports = new function () {
     createChromeProcess = function (port) {
         return chromeLauncher.launch({
             port: port, // Uncomment to force a specific port of your choice.
-            chromeFlags: ['--disable-gpu', '--incognito', '--disable-dev-shm-usage', '--no-sandbox', '--disable-gpu', '--headless']//'--headless'
+            chromeFlags: ['--disable-gpu', '--incognito', '--disable-dev-shm-usage', '--no-sandbox', '--headless']
         });
     }
 
