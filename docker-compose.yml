@@ -1,0 +1,13 @@
+version: "3"
+
+services:
+  chrome:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: lianshufeng/chrome
+    ports:
+      - "8080:8080"
+      - "9222:9222"
+    container_name: docker_chrome
+    restart: always

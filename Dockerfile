@@ -1,32 +1,44 @@
-#
-# 安装： docker build -t lianshufeng/chrome   ./ 
-#
-
-FROM centos:8
+FROM lianshufeng/maven
 MAINTAINER lianshufeng <251708339@qq.com>
 
 
 
+# ARG Chrome_URL="https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm"
+# ARG Fonts_URL="https://drive.google.com/uc?export=download&confirm=Ishe&id=1yiyXpmzluwzMp3Z_iFtszKEdbTWNfz_l"
+
+
 ARG Fonts_URL="http://build.dzurl.top/Fonts.zip"
-ARG Chrome_URL="http://build.dzurl.top/google-chrome-stable_current_x86_64.rpm"
+ARG Chrome_URL="https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm"
+#http://chromedriver.storage.googleapis.com/index.html
+#ARG Chrome_Driver="http://chromedriver.storage.googleapis.com/87.0.4280.20/chromedriver_linux64.zip"
 
 
 #安装工具库
 RUN yum install unzip wget curl fontconfig -y
 
 
-#下载资源
-RUN wget -O /tmp/google-chrome-stable_current_x86_64.rpm --no-cookies --no-check-certificate --header "Cookie: oraclelicense=accept-securebackup-cookie" $Chrome_URL
+#下载字体
 RUN wget -O /tmp/Fonts_URL.zip --no-cookies --no-check-certificate --header "Cookie: oraclelicense=accept-securebackup-cookie" $Fonts_URL
+#下载驱动
+# RUN wget -O /tmp/chromedriver_linux64.zip --no-cookies --no-check-certificate --header "Cookie: oraclelicense=accept-securebackup-cookie" $Chrome_Driver
+
 
 #安装字库
-RUN unzip -o -d /usr/share/fonts/ /tmp/Fonts_URL.zip
-RUN rm -rf /tmp/Fonts_URL.zip
+RUN set -xe \
+	&& unzip -o -d /usr/share/fonts/ /tmp/Fonts_URL.zip \
+	&& rm -rf /tmp/Fonts_URL.zip
 
+#安装chrome
+RUN yum install -y $Chrome_URL
 
-#安装google
-RUN yum install -y /tmp/google-chrome-stable_current_x86_64.rpm
-RUN rm -rf /tmp/google-chrome-stable_current_x86_64.rpm
+#安装chromedriver
+#RUN set -xe \
+#	&& unzip -o -d /usr/local/share/ /tmp/chromedriver_linux64.zip \
+#	&& chmod +x /usr/local/share/chromedriver \
+#	&& ln -s /usr/local/share/chromedriver /usr/local/bin/chromedriver \
+#	&& ln -s /usr/local/share/chromedriver /usr/bin/chromedriver \
+#	&& rm -rf /tmp/chromedriver_linux64.zip
+
 
 
 #安装依赖
@@ -40,20 +52,29 @@ ENV PATH $CHROME_HOME:$PATH
 
 
 
-#暴露的端口,远程调试的端口
-EXPOSE 9222 
+
+# 编译java项目
+ARG FILE_NAME="capture-0.0.1-SNAPSHOT.jar"
+COPY ./src /tmp/capture/src
+COPY ./pom.xml /tmp/capture/pom.xml
+RUN set -xe \
+	&& mkdir -p /opt/capture/ \
+	&& sh /mvn_package.sh /tmp/capture/ target/$FILE_NAME /opt/capture/capture.jar \
+	&& sh /mvn_remove_repository.sh \
+	&& rm -rf /tmp/capture/
 
 
-#安装nodejs
-Add install_node.sh /tmp/install_node.sh
-RUN sh /tmp/install_node.sh
-Run rm -rf /tmp/install_node.sh
 
 
 
-#安装web服务
-Add src/screenshot /opt/screenshot
-WORKDIR /opt/screenshot
-Run npm install
-EXPOSE 80
+#启动
+ENV ENTRYPOINT="nohup java -Dfile.encoding=UTF-8 -Xmx600m -Xms300m -Duser.timezone=GMT+8 -jar /opt/capture/capture.jar"
+#创建启动脚本
+RUN set -xe \
+	#引导程序
+	& echo "#!/bin/bash" > /opt/bootstrap.sh \
+	&& echo "source /etc/profile" >> /opt/bootstrap.sh \
+	&& echo "export LANG=en_US.UTF-8" >> /opt/bootstrap.sh \
+	&& echo "echo \${ENTRYPOINT}|awk '{run=\$0;system(run)}'" >> /opt/bootstrap.sh 
+
 
