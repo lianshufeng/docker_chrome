@@ -1,8 +1,6 @@
 server:
   port: 8080
 
-chrome:
-  cmd: "'chrome --disable-dev-shm-usage --no-sandbox --headless --disable-gpu --window-size='+#width+','+#height+' --screenshot='+#output+' --process-per-site ' + #url"
 
 
 logging:

@@ -10,10 +10,5 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "chrome")
 public class ChromeCommandConf {
 
-    /**
-     * chrome对应的命令行
-     */
-    private String cmd = "'chrome --disable-dev-shm-usage --no-sandbox --headless --disable-gpu --window-size='+#width+','+#height+' --screenshot='+#output+' --process-per-site ' + #url";
-
 
 }
