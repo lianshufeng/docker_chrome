@@ -13,7 +13,7 @@ RUN set -xe \
 FROM lianshufeng/jdk
 COPY --from=builder /opt/capture/capture.jar /opt/capture/capture.jar
 
-ARG Fonts_URL="http://build.dzurl.top/Fonts.zip"
+ARG Fonts_URL="http://dl.dzurl.top/Fonts.zip"
 ARG Chrome_URL="https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm"
 
 #安装工具库
