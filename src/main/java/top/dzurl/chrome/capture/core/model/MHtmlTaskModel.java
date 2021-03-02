@@ -5,9 +5,7 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class CaptureTaskModel extends TaskModel {
+public class MHtmlTaskModel extends TaskModel {
 
-    //是否完整截图
-    private boolean full = true;
 
 }

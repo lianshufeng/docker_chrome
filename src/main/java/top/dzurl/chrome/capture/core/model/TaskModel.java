@@ -11,9 +11,16 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public abstract class TaskModel {
 
+    //请求的地址
+    private String url;
 
-    //写出的临时文件
-    private String output;
+    //打开页面后等待时间
+    private Long wait;
 
+    //宽度
+    private int width = 1024;
+
+    //高度
+    private int height = 768;
 
 }

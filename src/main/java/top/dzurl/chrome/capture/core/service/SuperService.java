@@ -2,26 +2,57 @@ package top.dzurl.chrome.capture.core.service;
 
 import lombok.Cleanup;
 import lombok.SneakyThrows;
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.springframework.util.Assert;
 import top.dzurl.chrome.capture.core.model.TaskModel;
 import top.dzurl.chrome.capture.core.util.SpringELUtil;
 import top.dzurl.chrome.capture.core.util.response.ResponseUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.awt.image.TileObserver;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 public abstract class SuperService<T extends TaskModel> {
 
+
     /**
-     * 默认的命令行
+     * 执行任务
+     *
+     * @param driver
+     */
+    public abstract void task(ChromeDriver driver, T model, File outFile);
+
+
+    /**
+     * 实验性的参数
      *
      * @return
      */
-    public abstract String command();
+    public Map<String, Map<String, Object>> experimentalOption() {
+        return null;
+    }
+
+
+    public String[] options(T model, File outFile) {
+        return new String[]{
+                "--incognito",
+                "--allow-running-insecure-content",
+                "--disable-dev-shm-usage",
+                "--no-sandbox",
+                "--headless",
+                "--disable-gpu",
+        };
+    }
 
 
     /**
@@ -32,49 +63,103 @@ public abstract class SuperService<T extends TaskModel> {
     public abstract ResponseUtil.MimeType mimeType();
 
 
-    /**
-     * 执行任务
-     *
-     * @param request
-     * @param response
-     * @param model
-     */
     @SneakyThrows
-    public void task(HttpServletRequest request, HttpServletResponse response, T model) {
+    public void task(HttpServletRequest request, HttpServletResponse response, final T model) {
+        Assert.hasText(model.getUrl(), "URL地址不能为空");
 
         //构建临时文件
-        @Cleanup("delete") File file = new File(System.getProperty("java.io.tmpdir") + File.separator + UUID.randomUUID().toString().replaceAll("-", "") + ".png");
-        model.setOutput(file.getAbsolutePath());
+        @Cleanup("delete") File outFile = new File(System.getProperty("java.io.tmpdir") + File.separator + UUID.randomUUID().toString().replaceAll("-", "") + ".png");
 
-        //执行命令行
-        String cmd = buildCmd(model);
+        ChromeOptions options = new ChromeOptions();
+        Arrays.stream(options(model, outFile)).forEach((it) -> {
+            options.addArguments(it);
+        });
 
-        //生产命令文件
-        @Cleanup("delete") File cmdFile = new File(System.getProperty("java.io.tmpdir") + File.separator + UUID.randomUUID().toString().replaceAll("-", "") + ".cmd");
-        @Cleanup FileOutputStream fileOutputStream = new FileOutputStream(cmdFile);
-        fileOutputStream.write(cmd.getBytes());
+        //增加实验性的配置
+        Optional.ofNullable(experimentalOption()).ifPresent((experimentalOption) -> {
+            experimentalOption.entrySet().forEach((entry) -> {
+                options.setExperimentalOption(entry.getKey(), entry.getValue());
+            });
+        });
 
-        //执行命令文件
-        runCmdFile(cmdFile);
+
+        ChromeDriver driver = new ChromeDriver(options);
+        //设置宽度与高度
+        driver.manage().window().setSize(new Dimension(model.getWidth(), model.getHeight()));
+
+        //打开页面
+        driver.get(model.getUrl());
+
+        //滑动到底部,保证全图加载
+        driver.executeScript("window.scrollTo(0,document.body.scrollHeight);");
+        Optional.ofNullable(model.getWait()).ifPresent((waitTime) -> {
+            driver.manage().timeouts().implicitlyWait(Duration.ofMillis(waitTime));
+        });
+        driver.executeScript("window.scrollTo(0,0);");
+
+
+        //自定义处理
+        try {
+            task(driver, model, outFile);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+        //退出
+        driver.quit();
+
 
         //写出流
-        if (file.exists()) {
-            @Cleanup FileInputStream imageInputFileStream = new FileInputStream(file);
-            writeStream(request, response, imageInputFileStream, file.length(), "image/png");
+        if (outFile.exists()) {
+            @Cleanup FileInputStream imageInputFileStream = new FileInputStream(outFile);
+            writeStream(request, response, imageInputFileStream, outFile.length());
         } else {
             response.sendError(404);
         }
     }
 
     /**
+     * 执行任务
+     *
+     * @param request
+     * @param response
+     */
+//    @SneakyThrows
+//    public void task2(HttpServletRequest request, HttpServletResponse response, T model) {
+//
+//        //构建临时文件
+//        @Cleanup("delete") File file = new File(System.getProperty("java.io.tmpdir") + File.separator + UUID.randomUUID().toString().replaceAll("-", "") + ".png");
+////        model.setOutput(file.getAbsolutePath());
+//
+//        //执行命令行
+//        String cmd = buildCmd(model);
+//
+//        //生产命令文件
+//        @Cleanup("delete") File cmdFile = new File(System.getProperty("java.io.tmpdir") + File.separator + UUID.randomUUID().toString().replaceAll("-", "") + ".cmd");
+//        @Cleanup FileOutputStream fileOutputStream = new FileOutputStream(cmdFile);
+//        fileOutputStream.write(cmd.getBytes());
+//
+//        //执行命令文件
+//        runCmdFile(cmdFile);
+//
+//        //写出流
+//        if (file.exists()) {
+//            @Cleanup FileInputStream imageInputFileStream = new FileInputStream(file);
+//            writeStream(request, response, imageInputFileStream, file.length());
+//        } else {
+//            response.sendError(404);
+//        }
+//    }
+
+    /**
      * 写出流
      *
      * @param response
      * @param inputStream
-     * @param type
      */
     @SneakyThrows
-    private void writeStream(HttpServletRequest request, HttpServletResponse response, InputStream inputStream, long sourceSize, String type) {
+    protected void writeStream(HttpServletRequest request, HttpServletResponse response, InputStream inputStream, long sourceSize) {
         ResponseUtil.writeStream(request, response, inputStream, sourceSize, mimeType());
     }
 
@@ -82,7 +167,7 @@ public abstract class SuperService<T extends TaskModel> {
      * 启动命令行
      */
     @SneakyThrows
-    private static void runCmdFile(File cmdFile) {
+    protected static void runCmdFile(File cmdFile) {
         Runtime runtime = Runtime.getRuntime();
         @Cleanup("destroy") Process p = runtime.exec(createStartCmd(cmdFile));
         p.waitFor();
@@ -94,8 +179,8 @@ public abstract class SuperService<T extends TaskModel> {
      *
      * @return
      */
-    private String buildCmd(TaskModel model) {
-        return SpringELUtil.parseExpression(model, command()).toString();
+    protected String buildCmd(Object model, String cmd) {
+        return SpringELUtil.parseExpression(model, cmd).toString();
     }
 
     /**
