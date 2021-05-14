@@ -3,9 +3,12 @@ package top.dzurl.chrome.capture.core.service;
 import lombok.Cleanup;
 import lombok.SneakyThrows;
 import org.openqa.selenium.Dimension;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
+import top.dzurl.chrome.capture.core.conf.ChromeCommandConf;
 import top.dzurl.chrome.capture.core.model.TaskModel;
 import top.dzurl.chrome.capture.core.util.SpringELUtil;
 import top.dzurl.chrome.capture.core.util.response.ResponseUtil;
@@ -24,6 +27,8 @@ import java.util.UUID;
 
 public abstract class SuperService<T extends TaskModel> {
 
+    @Autowired
+    private ChromeCommandConf chromeCommandConf;
 
     /**
      * 执行任务
@@ -84,8 +89,14 @@ public abstract class SuperService<T extends TaskModel> {
 
 
         ChromeDriver driver = new ChromeDriver(options);
+        //timout
+        WebDriver.Timeouts timeouts = driver.manage().timeouts();
+        timeouts.setScriptTimeout(Duration.ofMillis(chromeCommandConf.getTimeout()));
+        timeouts.pageLoadTimeout(Duration.ofMillis(chromeCommandConf.getTimeout()));
+
         //设置宽度与高度
         driver.manage().window().setSize(new Dimension(model.getWidth(), model.getHeight()));
+
 
         //打开页面
         driver.get(model.getUrl());

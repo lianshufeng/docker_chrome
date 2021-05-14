@@ -10,5 +10,6 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "chrome")
 public class ChromeCommandConf {
 
+    private long timeout = 60 * 1000;
 
 }
