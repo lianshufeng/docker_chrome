@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import top.dzurl.chrome.capture.core.model.CaptureTaskModel;
+import top.dzurl.chrome.capture.core.model.PDFTaskModel;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,14 +29,8 @@ public class IndexController {
         return new HashMap<String, Object>() {{
             put("time", System.currentTimeMillis());
             put("task", new Model[]{
-                    Model.builder().build().setUri(new String[]{"capture", "capture.json"}).setParameter(new HashMap<String, Object>() {{
-                        put("url", "网页地址");
-                        put("width", "网页宽度");
-                        put("height", "网页高度");
-                    }}),
-                    Model.builder().build().setUri(new String[]{"pdf", "pdf.json"}).setParameter(new HashMap<String, Object>() {{
-                        put("url", "网页地址");
-                    }})
+                    Model.builder().build().setUri(new String[]{"capture", "capture.json"}).setParameter(new CaptureTaskModel()),
+                    Model.builder().build().setUri(new String[]{"pdf", "pdf.json"}).setParameter(new PDFTaskModel())
             });
 
 
@@ -58,7 +54,7 @@ public class IndexController {
         private String[] uri;
 
         //接口参数
-        private Map<String, Object> parameter;
+        private Object parameter;
 
 
     }

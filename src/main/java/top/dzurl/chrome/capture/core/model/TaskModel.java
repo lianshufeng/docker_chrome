@@ -15,7 +15,7 @@ public abstract class TaskModel {
     private String url;
 
     //打开页面后等待时间
-    private Long wait;
+    private Long wait = 0L;
 
     //宽度
     private int width = 1024;

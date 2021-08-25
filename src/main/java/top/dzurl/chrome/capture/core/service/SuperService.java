@@ -15,7 +15,6 @@ import top.dzurl.chrome.capture.core.util.response.ResponseUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.awt.image.TileObserver;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -104,7 +103,7 @@ public abstract class SuperService<T extends TaskModel> {
         //滑动到底部,保证全图加载
         driver.executeScript("window.scrollTo(0,document.body.scrollHeight);");
         Optional.ofNullable(model.getWait()).ifPresent((waitTime) -> {
-            driver.manage().timeouts().implicitlyWait(Duration.ofMillis(waitTime));
+            driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(waitTime));
         });
         driver.executeScript("window.scrollTo(0,0);");
 
