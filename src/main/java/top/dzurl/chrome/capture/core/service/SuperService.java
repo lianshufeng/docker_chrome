@@ -103,7 +103,14 @@ public abstract class SuperService<T extends TaskModel> {
         //滑动到底部,保证全图加载
         driver.executeScript("window.scrollTo(0,document.body.scrollHeight);");
         Optional.ofNullable(model.getWait()).ifPresent((waitTime) -> {
-            driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(waitTime));
+            if (waitTime > 0) {
+                driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(waitTime));
+                try {
+                    Thread.sleep(waitTime * 1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         });
         driver.executeScript("window.scrollTo(0,0);");
 
