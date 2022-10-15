@@ -9,6 +9,7 @@ services:
     image: lianshufeng/ffmpeg_chrome
     shm_size: 2gb
     ports:
+      - "9000:9000"
       - "4444:4444" # Selenium 
       - "7900:7900" # novnc secret
     container_name: selenium_chrome
