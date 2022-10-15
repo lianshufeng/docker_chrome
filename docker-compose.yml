@@ -1,13 +1,19 @@
 version: "3"
 
 services:
-  chrome:
+  selenium_chrome:
     build:
       context: ./
       dockerfile: Dockerfile
-    image: lianshufeng/chrome
+      shm_size: 2gb
+    image: lianshufeng/ffmpeg_chrome
+    shm_size: 2gb
     ports:
-      - "8080:8080"
-      - "9222:9222"
-    container_name: docker_chrome
+      - "4444:4444" # Selenium 
+      - "7900:7900" # novnc secret
+    container_name: selenium_chrome
+    environment:
+      - SE_NODE_SESSION_TIMEOUT=31536000 # 会话过期时间
+      - SCREEN_WIDTH=1920
+      - SCREEN_HEIGHT=1080
     restart: always
