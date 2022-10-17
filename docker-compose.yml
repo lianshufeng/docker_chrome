@@ -6,7 +6,7 @@ services:
       context: ./
       dockerfile: Dockerfile
       shm_size: 2gb
-    image: lianshufeng/ffmpeg_chrome
+    image: lianshufeng/chrome
     shm_size: 2gb
     ports:
       - "9000:9000"
